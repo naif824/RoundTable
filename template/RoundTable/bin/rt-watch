@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+LIVE_FILE="$RT_DIR/live.md"
+
+touch "$LIVE_FILE"
+
+if command -v tail >/dev/null 2>&1; then
+  tail -n 80 -f "$LIVE_FILE"
+else
+  while true; do
+    clear
+    sed -n '1,160p' "$LIVE_FILE"
+    sleep 2
+  done
+fi

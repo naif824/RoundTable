@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+required_files=(
+  README.md
+  project.md
+  environment.md
+  team.md
+  scope.md
+  sprint.md
+  tasks.md
+  backlog.md
+  live.md
+  current-status.md
+  resume.md
+  handoff.md
+  human-test.md
+  action-log.md
+  discussion-log.md
+  decision-log.md
+  signoff-log.md
+  verification-log.md
+  risk-register.md
+  approval-gates.md
+)
+
+mkdir -p "$RT_DIR/audit" "$RT_DIR/roles"
+
+missing=0
+for file in "${required_files[@]}"; do
+  if [[ ! -f "$RT_DIR/$file" ]]; then
+    echo "Missing RoundTable file: $RT_DIR/$file" >&2
+    missing=1
+  fi
+done
+
+if [[ ! -f "$RT_DIR/bin/rt-log" ]]; then
+  echo "Missing helper: $RT_DIR/bin/rt-log" >&2
+  missing=1
+fi
+
+if [[ "$missing" -ne 0 ]]; then
+  exit 1
+fi
+
+bash "$RT_DIR/bin/rt-log" "AI Operator" "Preflight passed. RoundTable folder, logs, audit, and helpers are available."
+echo "RoundTable preflight passed: $RT_DIR"

@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+cat > "$RT_DIR/handoff.md" <<'EOF'
+# Handoff
+
+Status: Ready For Human Test
+
+## What Is Ready
+
+TBD
+
+## What To Open
+
+TBD
+
+## What To Try
+
+TBD
+
+## Expected Result
+
+TBD
+
+## Known Visible Limitations
+
+TBD
+
+## What Needs Your Decision
+
+TBD
+EOF
+
+cat > "$RT_DIR/human-test.md" <<'EOF'
+# Human Test
+
+## Open
+
+TBD
+
+## Test Flow
+
+1. TBD
+
+## Expected Result
+
+TBD
+
+## If Something Looks Wrong
+
+Tell the RoundTable what you saw and where it happened.
+EOF
+
+bash "$RT_DIR/bin/rt-log" "AI Operator" "Human-facing handoff and human-test files were prepared."
+echo "Prepared $RT_DIR/handoff.md and $RT_DIR/human-test.md"

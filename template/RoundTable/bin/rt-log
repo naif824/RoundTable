@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -lt 2 ]]; then
+  echo "Usage: RoundTable/bin/rt-log ROLE MESSAGE..." >&2
+  exit 2
+fi
+
+ROLE="$1"
+shift
+MESSAGE="$*"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+DATE="$(date -u +%F)"
+STAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+AUDIT_DIR="$RT_DIR/audit"
+AUDIT_FILE="$AUDIT_DIR/$DATE-session.md"
+LIVE_FILE="$RT_DIR/live.md"
+
+mkdir -p "$AUDIT_DIR"
+touch "$LIVE_FILE" "$AUDIT_FILE"
+
+printf '[%s] %s\n' "$ROLE" "$MESSAGE" >> "$LIVE_FILE"
+printf '[%s] [%s] %s\n' "$STAMP" "$ROLE" "$MESSAGE" >> "$AUDIT_FILE"
