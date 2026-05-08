@@ -1,108 +1,200 @@
 # RoundTable
 
-RoundTable is a project-local operating system for autonomous AI teams.
+**Autonomous AI team workflow for Claude Code, Codex, Gemini, Cursor, VS Code, and long-running tmux sessions.**
 
-It is designed for a solo builder who wants to drop a brief, form an internal team, let the team challenge itself, lock a sprint, execute through agents/tools, review every output, verify deeply, and stop only when the work is ready for human test.
+RoundTable turns an AI coding session into a project-local product team. You give a brief, the team forms roles, challenges assumptions, locks one sprint, implements through agents/tools, reviews the output, verifies edge cases, and stops when the work is **Ready For Human Test**.
 
-## Trigger
+It is built for solo founders and builders who want an AI team that can work while they sleep, without losing visibility, memory, review discipline, or audit history.
 
-The canonical trigger is:
+## Why RoundTable Exists
+
+Most AI coding workflows fail in the same places:
+
+- the model rushes from brief to code
+- assumptions stay hidden
+- security, QA, design, and product concerns are skipped
+- long sessions lose context
+- autonomous work happens silently
+- "done" means "code was written", not "work was reviewed and verified"
+
+RoundTable fixes that by making the AI operate as a visible team with logs, roles, challenge, signoff, and final human-test handoff.
+
+## The Trigger
+
+The human says:
 
 ```text
 roundtable
 ```
 
-When the human says `roundtable`, the AI Operator asks which project/folder to use, then initializes or loads:
+The AI asks which project/folder to use, then initializes or loads:
 
 ```text
 <ProjectRoot>/RoundTable/
 ```
 
-After RoundTable is active, meaningful work must run through the RoundTable protocol.
+After that, meaningful work runs through the RoundTable protocol.
+
+## What It Does
+
+- Forms a project-specific AI team before scoping.
+- Uses roles like `[CEO]`, `[CTO]`, `[Security]`, `[QA]`, `[Product]`, `[Design]`, `[Infra]`, and `[AI Operator]`.
+- Forces roles to challenge each other instead of silently agreeing.
+- Locks one sprint at a time to avoid drift.
+- Allows workers/subagents to implement, but requires RoundTable review before acceptance.
+- Prevents the AI Operator from self-approving its own work.
+- Makes QA a hard gate for `Ready For Human Test`.
+- Makes Security a hard gate for security-relevant work.
+- Keeps a live terminal waterfall of role discussion.
+- Keeps timestamped audit logs for historical review.
+- Produces simple human-facing handoff and test instructions at the end.
 
 ## Install
 
+Clone this repo, then install RoundTable into any project:
+
 ```bash
+git clone https://github.com/naif824/RoundTable.git
+cd RoundTable
 bash install.sh /path/to/project
 ```
 
-The installer:
+The installer creates:
 
-- creates `<ProjectRoot>/RoundTable`
-- installs helper scripts in `<ProjectRoot>/RoundTable/bin`
-- creates RoundTable state/log files
-- adds managed RoundTable sections to `CLAUDE.md`, `AGENTS.md`, and `GEMINI.md`
-- preserves unrelated existing instructions
+```text
+/path/to/project/RoundTable/
+```
 
-## Core Idea
+It also adds managed RoundTable sections to:
 
-RoundTable is not a planning format. It is a governance and review authority.
+- `CLAUDE.md`
+- `AGENTS.md`
+- `GEMINI.md`
 
-- The internal CEO leads the team.
-- The human is not the Founder role. The human starts the process and tests at the end.
-- The team forms before scope.
-- Scope is locked into one sprint at a time.
-- Parallel agents may implement inside a sprint, but RoundTable reviews and accepts their output.
-- AI Operator executes, but cannot self-approve.
-- QA is a hard gate for `Ready For Human Test`.
-- Security is a hard gate for security-relevant work.
-- Quality beats speed.
+Existing content is preserved.
 
 ## Project Layout
 
 ```text
 RoundTable/
-  README.md
-  project.md
-  environment.md
-  team.md
-  scope.md
-  sprint.md
-  tasks.md
-  backlog.md
-  live.md
-  current-status.md
-  resume.md
-  handoff.md
-  human-test.md
-  action-log.md
-  discussion-log.md
-  decision-log.md
-  signoff-log.md
-  verification-log.md
-  risk-register.md
-  approval-gates.md
-  runtime.md
-  artifacts.md
-  audit/
-  roles/
+  README.md              # project-local protocol
+  project.md             # selected project root
+  environment.md         # BUILD_SANDBOX / STAGING / PRODUCTION_ASSISTED
+  team.md                # active team and rationale
+  scope.md               # locked scope and assumptions
+  sprint.md              # current sprint
+  tasks.md               # task queue
+  backlog.md             # ideas outside the sprint
+  live.md                # visible terminal waterfall
+  current-status.md      # compact status
+  resume.md              # recovery state after restart/compaction
+  handoff.md             # simple human-facing final summary
+  human-test.md          # simple human-facing test checklist
+  audit/                 # timestamped chronological audit
+  roles/                 # optional role notes
   bin/
     rt-log
-    rt-preflight
     rt-watch
+    rt-preflight
     rt-handoff
 ```
 
-## Helpers
+## Live Terminal Waterfall
 
-Inside a project:
+RoundTable is designed for `tmux`.
+
+Run:
 
 ```bash
-RoundTable/bin/rt-log CEO "We are forming the team before scope."
 RoundTable/bin/rt-watch
-RoundTable/bin/rt-preflight
 ```
 
-`rt-log` writes clean role dialogue to `RoundTable/live.md` and timestamped audit entries to `RoundTable/audit/YYYY-MM-DD-session.md`.
-
-The visible terminal waterfall must show role dialogue without timestamps:
+The visible pane shows clean role dialogue without timestamps:
 
 ```text
 [CEO] We are forming the team before scope.
-[Security] I need to review auth, secrets, and data exposure before signoff.
+[Security] I need auth, secrets, and public exposure reviewed before signoff.
 [QA] Ready for human test requires edge-case verification for the locked scope.
+[AI Operator] Action: running preflight.
 ```
 
-## Status
+Every log line can be written with:
 
-This repo is the reusable source template. Each installed project owns its own `RoundTable/` folder and logs.
+```bash
+RoundTable/bin/rt-log CEO "We are forming the team before scope."
+RoundTable/bin/rt-log Security "I need auth, secrets, and public exposure reviewed before signoff."
+```
+
+`rt-log` writes:
+
+- clean visible text to `RoundTable/live.md`
+- timestamped audit text to `RoundTable/audit/YYYY-MM-DD-session.md`
+
+## Core Rules
+
+- **Quality beats speed.**
+- Team formation happens before scope.
+- One active sprint at a time.
+- No role bypass.
+- The AI Operator executes but cannot self-approve.
+- RoundTable reviews every meaningful output before acceptance.
+- QA controls whether a sprint is verified.
+- Security controls signoff for security-relevant work.
+- New ideas go to `backlog.md` unless needed for the locked scope.
+- Human test is the final autonomous endpoint.
+
+## Ready For Human Test
+
+RoundTable does not claim market launch.
+
+The autonomous team can reach:
+
+```text
+Ready For Human Test
+```
+
+That means:
+
+- locked scope implemented
+- RoundTable reviewed the output
+- objections resolved or logged
+- QA verification signed off
+- Security signed off when relevant
+- human-facing `handoff.md` and `human-test.md` are ready
+
+Only the human can move the project to:
+
+- `Human Accepted`
+- `Market Ready`
+
+## Who This Is For
+
+RoundTable is useful if you:
+
+- use Claude Code, Codex, Gemini, Cursor, or VS Code Remote SSH
+- run long AI sessions in `tmux`
+- want autonomous AI work while you are away
+- care about product quality, QA, security, and auditability
+- want a solo-founder version of an AI product team
+
+## What This Is Not
+
+RoundTable is not:
+
+- an AI model
+- a replacement for Claude/Codex/Gemini
+- a project management SaaS
+- a magic memory system
+- a production-launch approval system
+
+It is a project-local operating protocol and toolkit for AI-assisted autonomous delivery.
+
+## Test
+
+```bash
+bash tests/test_install.sh
+```
+
+## Current Status
+
+RoundTable is early but usable. The first version focuses on the installable project template, AI instruction files, visible live log, timestamped audit log, and core methodology.
