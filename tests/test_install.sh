@@ -24,6 +24,8 @@ test -f "$TMP/project/GEMINI.md"
 
 grep -q "Keep this line." "$TMP/project/AGENTS.md"
 grep -q "ROUNDTABLE:START" "$TMP/project/AGENTS.md"
+grep -q "visible role dialogue" "$TMP/project/AGENTS.md"
+grep -q "chat stream" "$TMP/project/RoundTable/README.md"
 grep -q "RoundTable installed for project" "$TMP/project/RoundTable/live.md"
 ls "$TMP/project/RoundTable/audit"/*-session.md >/dev/null
 

@@ -17,7 +17,7 @@ Most AI coding workflows fail in the same places:
 - autonomous work happens silently
 - "done" means "code was written", not "work was reviewed and verified"
 
-RoundTable fixes that by making the AI operate as a visible team with logs, roles, challenge, signoff, and final human-test handoff.
+RoundTable fixes that by making the AI operate as a visible team in the chat stream, with logs, roles, challenge, signoff, and final human-test handoff.
 
 ## The Trigger
 
@@ -45,7 +45,7 @@ After that, meaningful work runs through the RoundTable protocol.
 - Prevents the AI Operator from self-approving its own work.
 - Makes QA a hard gate for `Ready For Human Test`.
 - Makes Security a hard gate for security-relevant work.
-- Keeps a live terminal waterfall of role discussion.
+- Keeps human-visible role dialogue in the chat stream.
 - Keeps timestamped audit logs for historical review.
 - Produces simple human-facing handoff and test instructions at the end.
 
@@ -85,7 +85,7 @@ RoundTable/
   sprint.md              # current sprint
   tasks.md               # task queue
   backlog.md             # ideas outside the sprint
-  live.md                # visible terminal waterfall
+  live.md                # mirror of visible role dialogue
   current-status.md      # compact status
   resume.md              # recovery state after restart/compaction
   handoff.md             # simple human-facing final summary
@@ -99,17 +99,11 @@ RoundTable/
     rt-handoff
 ```
 
-## Live Terminal Waterfall
+## Visible Role Dialogue
 
-RoundTable is designed for `tmux`.
+RoundTable is designed for long-running AI sessions. Role discussion belongs in the chat stream first; terminal logs and `live.md` are audit mirrors, not a substitute for visible discussion.
 
-Run:
-
-```bash
-RoundTable/bin/rt-watch
-```
-
-The visible pane shows clean role dialogue without timestamps:
+The chat stream must show clean role dialogue without timestamps:
 
 ```text
 [CEO] We are forming the team before scope.

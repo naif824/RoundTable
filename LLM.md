@@ -18,7 +18,7 @@ The human says `roundtable`; the AI asks for the project folder; then all meanin
 - Workers/subagents implement; RoundTable reviews.
 - QA is required for `Ready For Human Test`.
 - Security is required for security-relevant work.
-- Visible `live.md` waterfall is mandatory.
+- Visible role dialogue in the chat stream is mandatory before actions and signoff.
 - Timestamped audit is mandatory.
 
 ## Main Files
@@ -31,6 +31,8 @@ The human says `roundtable`; the AI asks for the project folder; then all meanin
 - `tests/test_install.sh`: installer smoke test.
 
 ## Important Behavior
+
+When RoundTable is active, post role discussion directly in the chat stream as visible role dialogue. Do not hide discussion only in terminal output, `live.md`, tool logs, or audit files. Files are mirrors for history; the human must see the discussion live in chat.
 
 Do not replace existing `CLAUDE.md`, `AGENTS.md`, or `GEMINI.md`. The installer updates only the managed RoundTable section between:
 

@@ -41,7 +41,7 @@ The internal `[CEO]` leads the team.
 7. QA is a hard gate for `Ready For Human Test`.
 8. Security is a hard gate for security-relevant work.
 9. New ideas go to `backlog.md` unless required for the locked scope.
-10. The visible terminal waterfall is mandatory.
+10. Visible role dialogue is mandatory.
 11. Every meaningful discussion, action, challenge, objection, signoff, and verification result is logged.
 12. The endpoint of autonomous work is `Ready For Human Test`, not market launch.
 
@@ -94,7 +94,9 @@ The sprint is done only when the locked scope is fully implemented, reviewed, ve
 
 ## Discussion And Consent
 
-Important work must be discussed by active roles using role labels:
+Important work must be discussed by active roles using role labels. This is human-visible RoundTable discussion, not terminal output and not background tool output.
+
+RoundTable role discussion must be posted directly in the chat stream as visible role dialogue before any action or signoff:
 
 ```text
 [CEO] We are locking this sprint around admin auth and rate limiting.
@@ -166,11 +168,11 @@ Each project declares one mode in `environment.md`:
 
 Default is `BUILD_SANDBOX`.
 
-## Live Waterfall
+## Visible Role Dialogue
 
-The visible terminal waterfall is mandatory.
+Visible role dialogue is mandatory.
 
-The pane should show `live.md` without timestamps:
+The AI must post role dialogue directly in the chat stream before actions or signoff:
 
 ```text
 [CEO] We are forming the sprint team.
@@ -179,13 +181,7 @@ The pane should show `live.md` without timestamps:
 [AI Operator] Action: running preflight.
 ```
 
-Use:
-
-```bash
-RoundTable/bin/rt-watch
-```
-
-All role dialogue should be logged through:
+The same dialogue must also be logged through:
 
 ```bash
 RoundTable/bin/rt-log CEO "Message"
@@ -193,7 +189,7 @@ RoundTable/bin/rt-log CEO "Message"
 
 `rt-log` writes:
 
-- clean line to `live.md`
+- clean line to `live.md` as a file mirror of the visible chat dialogue
 - timestamped audit entry to `audit/YYYY-MM-DD-session.md`
 
 ## Required Files
@@ -205,7 +201,7 @@ RoundTable/bin/rt-log CEO "Message"
 - `sprint.md`: current sprint.
 - `tasks.md`: task queue.
 - `backlog.md`: ideas outside scope.
-- `live.md`: visible terminal waterfall.
+- `live.md`: file mirror of visible role dialogue.
 - `current-status.md`: compact current state.
 - `resume.md`: recovery state for compaction/restart.
 - `handoff.md`: simple human-facing final summary.
@@ -258,7 +254,7 @@ On resume, compaction, or tool restart:
 RoundTable is non-compliant if:
 
 - `RoundTable/` is missing.
-- live waterfall is not available.
+- visible role dialogue is not available.
 - discussion happened outside logs.
 - a relevant role was skipped.
 - implementation was accepted without review.

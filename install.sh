@@ -57,6 +57,7 @@ When the human says `roundtable`, follow `./RoundTable/README.md`.
 After RoundTable is active:
 
 - Do not execute meaningful work outside the RoundTable protocol.
+- Post role discussion directly in the chat stream as visible role dialogue before actions or signoff.
 - Log role discussion, actions, challenges, reviews, verification, signoffs, and handoff under `./RoundTable/`.
 - Use `./RoundTable/bin/rt-log` for visible role dialogue and timestamped audit entries.
 - The AI Operator may execute, but cannot self-approve. RoundTable reviews and signs off.

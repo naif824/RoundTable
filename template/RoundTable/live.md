@@ -1,3 +1,3 @@
 # Live RoundTable
 
-[AI Operator] RoundTable live waterfall initialized.
+[AI Operator] RoundTable visible role dialogue initialized.
