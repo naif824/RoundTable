@@ -47,7 +47,7 @@ QUORUM="${RT_PANEL_QUORUM:-3}"          # min reviewers that must return a verdi
 TO="${RT_PANEL_TIMEOUT:-300}"; TO_GROK="${RT_PANEL_TIMEOUT_GROK:-420}"
 TBIN=""; command -v timeout >/dev/null 2>&1 && TBIN="timeout"; command -v gtimeout >/dev/null 2>&1 && TBIN="gtimeout"
 
-PREAMBLE="You are an independent reviewer on a RoundTable AI team. Review the item below from YOUR assigned lens only. Be concise and specific. You MAY use web search to verify facts/APIs — cite what you find. Do NOT modify files. End with EXACTLY one line: 'VERDICT: APPROVE' or 'VERDICT: CONCERNS' or 'VERDICT: OBJECT' followed by a one-line reason."
+PREAMBLE="You are an INDEPENDENT reviewer on a RoundTable AI team. Review the item below from YOUR assigned lens only. Judge independently — do NOT anchor on the operator's framing, the provided context, or any claim that this already works or passes; form your own view first. Lead with the strongest objection you can find before conceding anything; no praise, no 'looks good', no validating the premise — accuracy is the only metric, not agreement. Be concise and specific; verify facts (you MAY web-search — cite what you find) and state your confidence (high/moderate/low). Do NOT modify files. End with EXACTLY one line: 'VERDICT: APPROVE' or 'VERDICT: CONCERNS' or 'VERDICT: OBJECT' followed by a one-line reason."
 [[ -n "$GATE" ]] && PREAMBLE="$PREAMBLE
 This is a HARD GATE ($GATE). Only APPROVE if you would stake your name on it shipping. If a real risk exists in your lens, OBJECT — it cannot be voted away."
 [[ -n "$CONTEXT" ]] && PREAMBLE="$PREAMBLE
