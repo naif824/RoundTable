@@ -22,7 +22,8 @@ The human is not the Founder/CEO role.
 
 The human:
 
-- gives the initial brief and project folder
+- gives the initial brief and project folder — fill `brief.md`, which feeds team
+  formation (Rule 2), the QA gate (Rule 7) and the Security gate (Rule 8)
 - may redirect if they choose
 - normally stays out of daily team consent
 - receives the final product at `Ready For Human Test`
