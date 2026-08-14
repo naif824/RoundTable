@@ -21,7 +21,23 @@ TEMPLATE_DIR="$SCRIPT_DIR/template/RoundTable"
 RT_DIR="$PROJECT_ROOT/RoundTable"
 
 mkdir -p "$RT_DIR"
-cp -R "$TEMPLATE_DIR/." "$RT_DIR/"
+
+# Additive by design. A fresh project gets the whole template; a project that
+# already has RoundTable keeps every file it owns (scope, tasks, all the logs)
+# and only receives what the template has gained since it was set up — e.g. a
+# brief.md added later. Re-running this on live work is therefore safe.
+while IFS= read -r -d '' rel; do
+  rel="${rel#./}"
+  if [[ -d "$TEMPLATE_DIR/$rel" ]]; then
+    mkdir -p "$RT_DIR/$rel"
+  elif [[ -e "$RT_DIR/$rel" ]]; then
+    echo "  kept   $rel"
+  else
+    mkdir -p "$(dirname "$RT_DIR/$rel")"
+    cp "$TEMPLATE_DIR/$rel" "$RT_DIR/$rel"
+    echo "  added  $rel"
+  fi
+done < <(cd "$TEMPLATE_DIR" && find . -mindepth 1 -print0)
 
 PROJECT_ROOT_ABS="$(cd "$PROJECT_ROOT" && pwd)"
 cat > "$RT_DIR/project.md" <<EOF
@@ -53,6 +69,10 @@ update_instruction_file() {
 This project uses RoundTable.
 
 When the human says `roundtable`, follow `./RoundTable/README.md`.
+
+The human brief is `./RoundTable/brief.md`. If it is missing or empty, ask for it and
+fill it together **before** forming the team — team formation, the QA gate and the
+Security gate are all derived from it.
 
 After RoundTable is active:
 
