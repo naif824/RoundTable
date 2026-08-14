@@ -25,6 +25,8 @@ required_files=(
   verification-log.md
   risk-register.md
   approval-gates.md
+  brief.md
+  PANEL-GATE.md
 )
 
 mkdir -p "$RT_DIR/audit" "$RT_DIR/roles"
@@ -37,14 +39,26 @@ for file in "${required_files[@]}"; do
   fi
 done
 
-if [[ ! -f "$RT_DIR/bin/rt-log" ]]; then
-  echo "Missing helper: $RT_DIR/bin/rt-log" >&2
-  missing=1
-fi
+for helper in rt-log rt-panel; do
+  if [[ ! -x "$RT_DIR/bin/$helper" ]]; then
+    echo "Missing/not-executable helper: $RT_DIR/bin/$helper" >&2
+    missing=1
+  fi
+done
 
 if [[ "$missing" -ne 0 ]]; then
   exit 1
 fi
 
-bash "$RT_DIR/bin/rt-log" "AI Operator" "Preflight passed. RoundTable folder, logs, audit, and helpers are available."
+# Non-fatal: the brief is the intake every gate derives from. Warn if it's still a template
+# (unfilled placeholders) — team formation and scope-lock should not proceed on a blank brief.
+if grep -qE '^\s*<[A-Za-z].*>\s*$|TBD' "$RT_DIR/brief.md" 2>/dev/null; then
+  echo "WARNING: brief.md still has unfilled placeholders. Fill it before forming the team or locking scope." >&2
+fi
+
+# Panel reviewers present? (advisory — the gate itself enforces quorum at run time)
+have=""; for cli in claude codex gemini grok; do command -v "$cli" >/dev/null 2>&1 && have="$have $cli"; done
+echo "Panel reviewers available:${have:- none — install the CLIs or the panel gate cannot convene}"
+
+bash "$RT_DIR/bin/rt-log" "AI Operator" "Preflight passed. RoundTable folder, logs, audit, panel gate, and helpers are available."
 echo "RoundTable preflight passed: $RT_DIR"

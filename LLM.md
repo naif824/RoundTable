@@ -18,6 +18,9 @@ The human says `roundtable`; the AI asks for the project folder; then all meanin
 - Workers/subagents implement; RoundTable reviews.
 - QA is required for `Ready For Human Test`.
 - Security is required for security-relevant work.
+- Hard gates (QA, Security) require a passing multi-model panel (`bin/rt-panel --gate qa|security`):
+  four independent CLIs vote, any OBJECT blocks, and the operator runs the panel but cannot vote in it.
+  See `template/RoundTable/PANEL-GATE.md`.
 - Visible role dialogue in the chat stream is mandatory before actions and signoff.
 - Timestamped audit is mandatory.
 

@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+# rt-panel — RoundTable multi-model review panel + HARD GATE.
+#
+# Fans a question/artifact out to four independent CLIs (claude, codex, gemini, grok),
+# each with a distinct reviewer lens, prints their verdicts, then AGGREGATES them into a
+# single gate outcome with a blocking exit code. This is what turns RoundTable roles from
+# personas (same model, different voice) into real capability (different vendors, real dissent).
+#
+# Why a gate: a signoff by the same model that did the work is self-attestation. The panel
+# makes a DIFFERENT set of models vote, and OBJECT cannot be majority-overridden.
+#
+# Usage:
+#   rt-panel "Should we lock this sprint around admin auth + rate limiting?"
+#   rt-panel -f artifact.swift --context "Reviewing the sync logic for data loss"
+#   echo "..." | rt-panel
+#   rt-panel --gate qa       -f change.diff --context "Acceptance for sprint N"   # HARD GATE
+#   rt-panel --gate security -f api.py                                            # HARD GATE
+#
+# Verdicts: each reviewer ends with one line — VERDICT: APPROVE | CONCERNS | OBJECT.
+# Aggregate outcome + exit code:
+#   0  PASS     — quorum reached, no OBJECT, no unresolved CONCERNS
+#   2  HOLD     — one or more CONCERNS and no OBJECT (resolve/log before signoff)
+#   3  BLOCKED  — one or more OBJECT (a hard gate CANNOT be overridden by majority)
+#   4  NO-QUORUM— fewer than RT_PANEL_QUORUM reviewers returned a verdict (gate cannot pass)
+#
+# In --gate mode the outcome + every verdict is appended (timestamped) to the matching log
+# (qa -> verification-log.md, everything else -> signoff-log.md), so the gate is auditable.
+
+set -uo pipefail
+
+CONTEXT="" QUESTION="" GATE=""
+RT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -f|--file)   QUESTION="$(cat "$2")"; shift 2 ;;
+    --context)   CONTEXT="$2"; shift 2 ;;
+    --gate)      GATE="$2"; shift 2 ;;
+    -h|--help)   grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *)           QUESTION="${QUESTION:+$QUESTION }$1"; shift ;;
+  esac
+done
+if [[ -z "$QUESTION" && ! -t 0 ]]; then QUESTION="$(cat)"; fi
+if [[ -z "$QUESTION" ]]; then echo "rt-panel: no question/artifact given. See --help." >&2; exit 2; fi
+
+QUORUM="${RT_PANEL_QUORUM:-3}"          # min reviewers that must return a verdict for a PASS
+TO="${RT_PANEL_TIMEOUT:-300}"; TO_GROK="${RT_PANEL_TIMEOUT_GROK:-420}"
+TBIN=""; command -v timeout >/dev/null 2>&1 && TBIN="timeout"; command -v gtimeout >/dev/null 2>&1 && TBIN="gtimeout"
+
+PREAMBLE="You are an independent reviewer on a RoundTable AI team. Review the item below from YOUR assigned lens only. Be concise and specific. You MAY use web search to verify facts/APIs — cite what you find. Do NOT modify files. End with EXACTLY one line: 'VERDICT: APPROVE' or 'VERDICT: CONCERNS' or 'VERDICT: OBJECT' followed by a one-line reason."
+[[ -n "$GATE" ]] && PREAMBLE="$PREAMBLE
+This is a HARD GATE ($GATE). Only APPROVE if you would stake your name on it shipping. If a real risk exists in your lens, OBJECT — it cannot be voted away."
+[[ -n "$CONTEXT" ]] && PREAMBLE="$PREAMBLE
+Context: $CONTEXT"
+prompt_for() { printf '%s\n\nYour lens: %s\n\n--- ITEM TO REVIEW ---\n%s\n' "$PREAMBLE" "$1" "$QUESTION"; }
+
+PANEL_TMP="$(mktemp -d)"; LABELS=(); PIDS=(); FILES=()
+launch() {  # $1=timeout $2=label $3=lens $4...=command (prompt appended)
+  local to="$1" label="$2" lens="$3"; shift 3
+  local f="$PANEL_TMP/$(echo "$label" | tr -cd 'A-Za-z').out"
+  { ${TBIN:+$TBIN $to} "$@" "$(prompt_for "$lens")" 2>&1 \
+      || echo "VERDICT: MISSING (reviewer error or timed out at ${to}s)"; } > "$f" 2>&1 &
+  LABELS+=("$label"); PIDS+=("$!"); FILES+=("$f")
+}
+
+echo "RoundTable Panel${GATE:+ — HARD GATE: $GATE} — $(date '+%Y-%m-%d %H:%M')  (cwd: $PWD)"
+echo "Question: ${QUESTION:0:120}$([[ ${#QUESTION} -gt 120 ]] && echo …)"
+echo "Launching 4 reviewers concurrently…"
+
+launch "$TO"      "CLAUDE (lead/synthesis)"  "Lead reviewer: overall soundness, alignment to scope/conventions, synthesized recommendation." \
+    claude --dangerously-skip-permissions --effort medium -p
+launch "$TO"      "CODEX (code correctness)" "Implementation & correctness: bugs, edge cases, data-loss risk, does it actually work." \
+    codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check -c model_reasoning_effort=medium
+launch "$TO"      "GEMINI (alternatives)"    "Architecture & alternatives: simpler/better approach? over- or under-engineered?" \
+    gemini --yolo --skip-trust -p
+launch "$TO_GROK" "GROK (adversarial)"       "Adversarial 'what breaks this': security holes, abuse, failure modes, strongest objection." \
+    grok --always-approve --tools web_search,web_fetch,read_file,view_file,grep_files -p
+
+declare -A V=([APPROVE]=0 [CONCERNS]=0 [OBJECT]=0 [MISSING]=0); SUMMARY=""
+for i in "${!LABELS[@]}"; do
+  wait "${PIDS[$i]}"
+  printf '\n========== %s ==========\n' "${LABELS[$i]}"; cat "${FILES[$i]}"
+  verdict="$(grep -aoiE 'VERDICT:[[:space:]]*(APPROVE|CONCERNS|OBJECT|MISSING)' "${FILES[$i]}" | tail -1 | grep -aoiE 'APPROVE|CONCERNS|OBJECT|MISSING' | tr '[:lower:]' '[:upper:]')"
+  [[ -z "$verdict" ]] && verdict="MISSING"
+  V[$verdict]=$(( ${V[$verdict]} + 1 ))
+  SUMMARY="${SUMMARY}  ${LABELS[$i]%% *} = $verdict"$'\n'
+done
+rm -rf "$PANEL_TMP"
+
+returned=$(( V[APPROVE] + V[CONCERNS] + V[OBJECT] ))
+if   (( V[OBJECT] > 0 ));        then OUTCOME="BLOCKED"; CODE=3
+elif (( returned < QUORUM ));    then OUTCOME="NO-QUORUM"; CODE=4
+elif (( V[CONCERNS] > 0 ));      then OUTCOME="HOLD"; CODE=2
+else                                  OUTCOME="PASS"; CODE=0
+fi
+
+printf '\n============================================================\n'
+printf 'PANEL OUTCOME: %s   (APPROVE=%s CONCERNS=%s OBJECT=%s MISSING=%s)\n' \
+       "$OUTCOME" "${V[APPROVE]}" "${V[CONCERNS]}" "${V[OBJECT]}" "${V[MISSING]}"
+case "$OUTCOME" in
+  PASS)      echo "→ Gate PASSES. Log the outcome and proceed." ;;
+  HOLD)      echo "→ Gate HELD by CONCERNS. Resolve or explicitly log why they're accepted before signoff." ;;
+  BLOCKED)   echo "→ Gate BLOCKED by OBJECT. A hard-gate OBJECT cannot be majority-overridden — resolve it." ;;
+  NO-QUORUM) echo "→ Only $returned/$QUORUM reviewers returned a verdict. Re-run; the gate cannot pass without quorum." ;;
+esac
+printf '============================================================\n'
+
+# --gate mode: append an auditable entry to the matching log
+if [[ -n "$GATE" ]]; then
+  case "$GATE" in qa|QA|verification) LOG="$RT_DIR/verification-log.md" ;; *) LOG="$RT_DIR/signoff-log.md" ;; esac
+  if [[ -f "$LOG" ]]; then
+    { printf '\n## %s — panel gate [%s]: **%s**\n' "$(date '+%Y-%m-%d %H:%M')" "$GATE" "$OUTCOME"
+      printf 'Question: %s\n\n' "${QUESTION:0:200}"
+      printf '%s' "$SUMMARY"
+      printf '(tally APPROVE=%s CONCERNS=%s OBJECT=%s MISSING=%s; quorum=%s)\n' \
+             "${V[APPROVE]}" "${V[CONCERNS]}" "${V[OBJECT]}" "${V[MISSING]}" "$QUORUM"
+    } >> "$LOG"
+    echo "Logged gate outcome to ${LOG#$RT_DIR/}"
+  fi
+fi
+exit "$CODE"

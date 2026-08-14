@@ -59,13 +59,11 @@ these even to make the work easier>
 
 ## 7. Where it runs
 
-- **Machine:** ft `100.77.255.37` / Mac mini `100.67.90.60` / Air `100.122.115.71` /
-  Huwawi `100.81.232.20`
+- **Machine:** which host does this target? (if you work across several machines, name the one)
 - **Saudi endpoints?** If this calls a Saudi portal or Saudi-market API, it must be
-  probed from the **Mac or Huwawi**, never ft — ft is Zurich and gets geo-fenced or
-  quietly served degraded data.
+  probed from a host inside that region — a server in the wrong country gets geo-fenced or quietly served degraded data.
 - **Leaves no residue:** build artifacts, DMGs, archives and `node_modules` are cleaned
-  before handoff (MacLab hard rules).
+  before handoff (your workspace's cleanup rules).
 
 ## 8. Evidence
 
@@ -98,7 +96,7 @@ is what stops the team inventing an answer and calling it a requirement.>
 every extracted figure carries a confidence score and the low-confidence ones are queued for
 review instead of silently shipped.
 
-**2. Why now** — MacOCR already beats Cohere on committee coverage, but there is no way to
+**2. Why now** — the extractor already beats the previous vendor on committee coverage, but there is no way to
 tell a good extraction from a bad one, so the whole corpus is one-tier and unsellable.
 
 **3. Done means**
@@ -107,11 +105,10 @@ tell a good extraction from a bad one, so the whole corpus is one-tier and unsel
 - [ ] Re-running the same PDF twice produces identical output
 - **Not done-blocking:** a UI for the review queue; a JSONL file is fine
 
-**4. How I will test it** — Run it over 5 board reports I have already checked by hand and
+**4. How I will test it** — Run it over 5 source documents I have already checked by hand and
 compare against my own numbers.
 
-**5. Scope** — In: the extraction pipeline in `~/MacLab/MacOCR`. Out: the Jaras app and its
-backend. Must not touch: `jaras.db` (read-only for this work).
+**5. Scope** — In: the extraction pipeline in `~/project/extractor`. Out: the downstream app and its backend. Must not touch: `prod.db` (read-only for this work).
 
 **6. Risk & gates** — Security-relevant: no. Reversible: outputs are new files; nothing
 overwritten. Blast radius: none, offline pipeline. Sensitive data: public filings only.
@@ -122,8 +119,8 @@ before handoff.
 **8. Evidence** — Field-level accuracy against the 5 hand-checked reports, reported as a
 number, before and after.
 
-**9. Source of truth** — The Arabic board report PDF. Not `jaras.db`, which was populated by
-the older Cohere pass and is known wrong on units.
+**9. Source of truth** — The source PDF. Not `prod.db`, which was populated by
+the older the previous vendor pass and is known wrong on units.
 
 **10. Constraints** — No deadline. Budget open. Must reuse the existing Apple Vision pipeline
 rather than starting a new extractor.

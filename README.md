@@ -90,13 +90,16 @@ RoundTable/
   resume.md              # recovery state after restart/compaction
   handoff.md             # simple human-facing final summary
   human-test.md          # simple human-facing test checklist
+  brief.md               # the human intake — scope, "done means", must-not-touch, evidence
+  PANEL-GATE.md          # spec: the multi-model hard gate
   audit/                 # timestamped chronological audit
-  roles/                 # optional role notes
+  roles/                 # persona library (Mandate/Owns/Objects-to/Checklist/Voice); QA & Security are hard gates
   bin/
     rt-log
     rt-watch
     rt-preflight
     rt-handoff
+    rt-panel             # multi-model review panel + hard gate
 ```
 
 ## Visible Role Dialogue
@@ -134,8 +137,28 @@ RoundTable/bin/rt-log Security "I need auth, secrets, and public exposure review
 - RoundTable reviews every meaningful output before acceptance.
 - QA controls whether a sprint is verified.
 - Security controls signoff for security-relevant work.
+- **Hard gates (QA, Security) require a passing multi-model panel** (`bin/rt-panel --gate`) — a
+  panel of different models votes, an OBJECT binds, and the same model that did the work cannot
+  be the one that clears it. See `PANEL-GATE.md`.
 - New ideas go to `backlog.md` unless needed for the locked scope.
 - Human test is the final autonomous endpoint.
+
+## The Panel Gate
+
+Roles are personas — the same model in different voices. A `[QA]` persona signing off on its own
+work is self-attestation. `bin/rt-panel` fixes that: at each hard gate it fans the artifact out to
+**four independent CLIs (`claude`, `codex`, `gemini`, `grok`)**, each with a distinct lens, and
+aggregates their verdicts into one blocking outcome:
+
+```bash
+RoundTable/bin/rt-panel --gate qa       -f acceptance-evidence.md
+RoundTable/bin/rt-panel --gate security -f changed-endpoint.py
+```
+
+`PASS` (exit 0) lets the gate sign off; `HOLD` (concerns), `BLOCKED` (any OBJECT — cannot be
+majority-overridden), or `NO-QUORUM` all stop it. In `--gate` mode the outcome and every model's
+verdict are appended to `verification-log.md` / `signoff-log.md`, so the audit shows what an
+independent panel said, not just that the operator asserted it. Full rules: `PANEL-GATE.md`.
 
 ## Ready For Human Test
 

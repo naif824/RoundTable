@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-usage() {
-  echo "Usage: bash install.sh /path/to/project" >&2
-}
+usage() { echo "Usage: bash install.sh [--upgrade] /path/to/project" >&2; }
 
-if [[ $# -ne 1 ]]; then
-  usage
-  exit 2
-fi
+MODE="install"
+if [[ "${1:-}" == "--upgrade" ]]; then MODE="upgrade"; shift; fi
+if [[ $# -ne 1 ]]; then usage; exit 2; fi
 
 PROJECT_ROOT="$1"
 if [[ ! -d "$PROJECT_ROOT" ]]; then
@@ -19,28 +16,43 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATE_DIR="$SCRIPT_DIR/template/RoundTable"
 RT_DIR="$PROJECT_ROOT/RoundTable"
-
 mkdir -p "$RT_DIR"
 
-# Additive by design. A fresh project gets the whole template; a project that
-# already has RoundTable keeps every file it owns (scope, tasks, all the logs)
-# and only receives what the template has gained since it was set up — e.g. a
-# brief.md added later. Re-running this on live work is therefore safe.
+# Protocol code — the parts that are the protocol itself, not project state. On --upgrade
+# these are force-refreshed (a broken/old rt-panel, an outdated README, a missing spec are
+# replaced). Everything else (brief, scope, sprint, tasks, all logs, audit, team, and any
+# role personas you customized) is additive-only and never overwritten.
+is_protocol() {
+  case "$1" in
+    README.md|PANEL-GATE.md|bin/*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+added=0 updated=0 kept=0
 while IFS= read -r -d '' rel; do
   rel="${rel#./}"
   if [[ -d "$TEMPLATE_DIR/$rel" ]]; then
     mkdir -p "$RT_DIR/$rel"
-  elif [[ -e "$RT_DIR/$rel" ]]; then
-    echo "  kept   $rel"
+  elif [[ -e "$RT_DIR/$rel" || -L "$RT_DIR/$rel" ]]; then
+    if [[ "$MODE" == "upgrade" ]] && is_protocol "$rel"; then
+      rm -f "$RT_DIR/$rel"                       # drop stale file OR broken symlink
+      mkdir -p "$(dirname "$RT_DIR/$rel")"
+      cp "$TEMPLATE_DIR/$rel" "$RT_DIR/$rel"
+      echo "  updated $rel"; updated=$((updated+1))
+    else
+      kept=$((kept+1))
+    fi
   else
     mkdir -p "$(dirname "$RT_DIR/$rel")"
     cp "$TEMPLATE_DIR/$rel" "$RT_DIR/$rel"
-    echo "  added  $rel"
+    echo "  added   $rel"; added=$((added+1))
   fi
 done < <(cd "$TEMPLATE_DIR" && find . -mindepth 1 -print0)
 
 PROJECT_ROOT_ABS="$(cd "$PROJECT_ROOT" && pwd)"
-cat > "$RT_DIR/project.md" <<EOF
+if [[ "$MODE" == "install" || ! -f "$RT_DIR/project.md" ]]; then
+  cat > "$RT_DIR/project.md" <<EOF
 # Project
 
 Project root:
@@ -55,8 +67,9 @@ RoundTable folder:
 $PROJECT_ROOT_ABS/RoundTable
 \`\`\`
 EOF
+fi
 
-chmod +x "$RT_DIR"/bin/*
+chmod +x "$RT_DIR"/bin/* 2>/dev/null || true
 
 update_instruction_file() {
   local file="$1"
@@ -81,19 +94,19 @@ After RoundTable is active:
 - Log role discussion, actions, challenges, reviews, verification, signoffs, and handoff under `./RoundTable/`.
 - Use `./RoundTable/bin/rt-log` for visible role dialogue and timestamped audit entries.
 - The AI Operator may execute, but cannot self-approve. RoundTable reviews and signs off.
+- Hard gates (QA, Security) require a passing multi-model panel: run
+  `./RoundTable/bin/rt-panel --gate qa|security` and record the outcome. Any OBJECT blocks
+  signoff and cannot be majority-overridden. See `./RoundTable/PANEL-GATE.md`.
 <!-- ROUNDTABLE:END -->
 EOF
 )"
 
   if [[ -f "$path" ]]; then
     python3 - "$path" "$block" <<'PY'
-import re
-import sys
-
+import re, sys
 path, block = sys.argv[1], sys.argv[2]
 with open(path, "r", encoding="utf-8") as f:
     content = f.read()
-
 pattern = r"<!-- ROUNDTABLE:START -->.*?<!-- ROUNDTABLE:END -->"
 if re.search(pattern, content, flags=re.S):
     content = re.sub(pattern, block, content, flags=re.S)
@@ -101,7 +114,6 @@ else:
     if content and not content.endswith("\n"):
         content += "\n"
     content += "\n" + block + "\n"
-
 with open(path, "w", encoding="utf-8") as f:
     f.write(content)
 PY
@@ -114,7 +126,7 @@ update_instruction_file "CLAUDE.md"
 update_instruction_file "AGENTS.md"
 update_instruction_file "GEMINI.md"
 
-bash "$RT_DIR/bin/rt-log" "AI Operator" "RoundTable installed for project: $PROJECT_ROOT_ABS"
-bash "$RT_DIR/bin/rt-preflight"
+bash "$RT_DIR/bin/rt-log" "AI Operator" "RoundTable ${MODE}ed for project: $PROJECT_ROOT_ABS (added=$added updated=$updated kept=$kept)"
+bash "$RT_DIR/bin/rt-preflight" || true
 
-echo "RoundTable installed at: $RT_DIR"
+echo "RoundTable ${MODE} complete at: $RT_DIR  (added=$added updated=$updated kept=$kept)"
